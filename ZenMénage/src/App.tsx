@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HeroCarousel } from './components/landing/HeroCarousel';
 import { Stats } from './components/landing/Stats';
 import { Features } from './components/landing/Features';
@@ -16,15 +16,36 @@ import { FamilyPage } from './components/family/FamilyPage';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { MobileNav } from './components/mobile/MobileNav';
 import { AddTaskModal } from './components/dashboard/AddTaskModal';
+import api from './services/api';
 
 type AppState = 'landing' | 'auth' | 'app';
 type Page = 'dashboard' | 'family' | 'settings';
 
 export default function App() {
-  const [appState, setAppState] = useState<AppState>('landing');
-  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const [appState, setAppState] = useState('landing');
+  const [currentPage, setCurrentPage] = useState('dashboard');
   const [showAddTask, setShowAddTask] = useState(false);
-  const userName = 'Sophie';
+  const [userName, setUserName] = useState('Sophie');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await api.getCurrentUser();
+      if (response.success) {
+        setAppState('app');
+        setUserName(response.data.user.name);
+      }
+    } catch (error) {
+      // Not authenticated, stay on landing page
+      console.log('Not authenticated');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGetStarted = () => {
     setAppState('auth');
@@ -35,10 +56,19 @@ export default function App() {
     setCurrentPage('dashboard');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await api.logout();
     setAppState('landing');
     setCurrentPage('dashboard');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-2xl text-[#3A3A3A]">Chargement...</div>
+      </div>
+    );
+  }
 
   if (appState === 'landing') {
     return (

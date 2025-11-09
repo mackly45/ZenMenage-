@@ -1,12 +1,36 @@
 import { useState } from 'react';
 import { Home, Mail, Lock } from 'lucide-react';
+import api from '../../services/api';
 
 export function AuthPage({ onLogin }: { onLogin: () => void }) {
   const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin();
+    setLoading(true);
+    setError('');
+    
+    const formData = new FormData(e.target as HTMLFormElement);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    
+    try {
+      if (isLogin) {
+        // Login
+        await api.login({ email, password });
+      } else {
+        // Register
+        const name = formData.get('name') as string;
+        await api.register({ name, email, password });
+      }
+      onLogin();
+    } catch (err) {
+      setError(err.message || (isLogin ? 'Login failed' : 'Registration failed'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -53,9 +77,11 @@ export function AuthPage({ onLogin }: { onLogin: () => void }) {
               <div>
                 <label className="block mb-2 text-sm text-[#3A3A3A]">Nom complet</label>
                 <input
+                  name="name"
                   type="text"
                   className="w-full px-4 py-3 rounded-lg bg-[#F5F6F8] border border-transparent focus:border-[#4A90E2] focus:outline-none transition-all"
                   placeholder="Sophie Martin"
+                  required
                 />
               </div>
             )}
@@ -64,9 +90,11 @@ export function AuthPage({ onLogin }: { onLogin: () => void }) {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#3A3A3A]/40" />
                 <input
+                  name="email"
                   type="email"
                   className="w-full pl-11 pr-4 py-3 rounded-lg bg-[#F5F6F8] border border-transparent focus:border-[#4A90E2] focus:outline-none transition-all"
                   placeholder="vous@exemple.com"
+                  required
                 />
               </div>
             </div>
@@ -75,17 +103,23 @@ export function AuthPage({ onLogin }: { onLogin: () => void }) {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#3A3A3A]/40" />
                 <input
+                  name="password"
                   type="password"
                   className="w-full pl-11 pr-4 py-3 rounded-lg bg-[#F5F6F8] border border-transparent focus:border-[#4A90E2] focus:outline-none transition-all"
                   placeholder="••••••••"
+                  required
                 />
               </div>
             </div>
+            {error && (
+              <div className="text-red-500 text-sm text-center py-2">{error}</div>
+            )}
             <button
               type="submit"
-              className="w-full bg-[#4A90E2] text-white py-3 rounded-lg hover:bg-[#4A90E2]/90 transition-all shadow-lg hover:shadow-xl"
+              disabled={loading}
+              className="w-full bg-[#4A90E2] text-white py-3 rounded-lg hover:bg-[#4A90E2]/90 transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
             >
-              {isLogin ? 'Se connecter' : 'Créer un compte'}
+              {loading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'Créer un compte')}
             </button>
           </form>
 

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, Sparkles, TrendingUp, Target } from 'lucide-react';
 import { motion } from 'motion/react';
 import { TaskList } from './TaskList';
 import { WeeklyStats } from './WeeklyStats';
 import { AddTaskModal } from './AddTaskModal';
+import api from '../../services/api';
 
 export function Dashboard({ userName }: { userName: string }) {
   const [showAddTask, setShowAddTask] = useState(false);

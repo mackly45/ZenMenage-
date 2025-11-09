@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, Filter, Plus, Trash2 } from 'lucide-react';
+import api from '../../services/api';
 
 type Task = {
   id: string;
@@ -12,66 +13,42 @@ type Task = {
 };
 
 export function TaskList({ onAddTask }: { onAddTask: () => void }) {
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: '1',
-      title: 'Passer l\'aspirateur',
-      room: 'Salon',
-      assignedTo: 'Sophie',
-      priority: 'high',
-      completed: false,
-      date: '2025-11-09',
-    },
-    {
-      id: '2',
-      title: 'Nettoyer la salle de bain',
-      room: 'Salle de bain',
-      assignedTo: 'Thomas',
-      priority: 'medium',
-      completed: true,
-      date: '2025-11-09',
-    },
-    {
-      id: '3',
-      title: 'Sortir les poubelles',
-      room: 'Cuisine',
-      assignedTo: 'Emma',
-      priority: 'high',
-      completed: false,
-      date: '2025-11-09',
-    },
-    {
-      id: '4',
-      title: 'Faire la vaisselle',
-      room: 'Cuisine',
-      assignedTo: 'Lucas',
-      priority: 'medium',
-      completed: false,
-      date: '2025-11-09',
-    },
-    {
-      id: '5',
-      title: 'Ranger la chambre',
-      room: 'Chambre',
-      assignedTo: 'Emma',
-      priority: 'low',
-      completed: true,
-      date: '2025-11-09',
-    },
-  ]);
+  const [tasks, setTasks] = useState([]);
+  const [filter, setFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
 
-  const [filter, setFilter] = useState<string>('all');
+  useEffect(() => {
+    fetchTasks();
+  }, []);
 
-  const toggleTask = (id: string) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      )
-    );
+  const fetchTasks = async () => {
+    try {
+      setLoading(true);
+      const response = await api.getTasks();
+      setTasks(response.data.tasks || []);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteTask = (id: string) => {
-    setTasks(tasks.filter((task) => task.id !== id));
+  const toggleTask = async (id: string) => {
+    try {
+      await api.toggleTask(id);
+      fetchTasks(); // Refresh the task list
+    } catch (error) {
+      console.error('Error toggling task:', error);
+    }
+  };
+
+  const deleteTask = async (id: string) => {
+    try {
+      await api.deleteTask(id);
+      fetchTasks(); // Refresh the task list
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
   };
 
   const filteredTasks = tasks.filter((task) => {

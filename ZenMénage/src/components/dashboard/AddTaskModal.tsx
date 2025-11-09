@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
+import api from '../../services/api';
 
 export function AddTaskModal({ onClose }: { onClose: () => void }) {
   const [formData, setFormData] = useState({
@@ -10,10 +11,14 @@ export function AddTaskModal({ onClose }: { onClose: () => void }) {
     date: new Date().toISOString().split('T')[0],
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would add the task to state/database
-    onClose();
+    try {
+      await api.createTask(formData);
+      onClose();
+    } catch (error) {
+      console.error('Error creating task:', error);
+    }
   };
 
   return (
