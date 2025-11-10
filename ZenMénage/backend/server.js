@@ -29,21 +29,28 @@ let db;
 
 try {
   const mongoose = require('mongoose');
+  console.log('Mongoose loaded successfully');
+  global.mongoose = mongoose;
   mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/zenmenage', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log('MongoDB connected successfully'))
+  .then(() => {
+    console.log('MongoDB connected successfully');
+    global.mongoose = mongoose;
+  })
   .catch((err) => {
     console.error('MongoDB connection error:', err);
     console.log('Using mock database for development');
     db = require('./config/db');
     global.db = db;
+    global.mongoose = null;
   });
 } catch (err) {
   console.log('Mongoose not available, using mock database');
   db = require('./config/db');
   global.db = db;
+  global.mongoose = null;
 }
 
 // Routes

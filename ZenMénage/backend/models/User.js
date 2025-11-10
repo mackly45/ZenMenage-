@@ -4,7 +4,9 @@ const bcrypt = require('bcryptjs');
 class User {
   static async create(userData) {
     // If we have a real database connection, use Mongoose
+    console.log('Checking for Mongoose connection:', !!global.mongoose);
     if (global.mongoose) {
+      console.log('Using Mongoose for User.create');
       const mongoose = require('mongoose');
       const userSchema = new mongoose.Schema({
         name: {
@@ -71,6 +73,7 @@ class User {
       
       return mongoose.model('User', userSchema).create(userData);
     } else {
+      console.log('Using mock database for User.create');
       // Use mock database
       const db = global.db;
       
@@ -93,12 +96,16 @@ class User {
   }
   
   static async findOne(query) {
+    console.log('User.findOne called with query:', query);
+    console.log('Using Mongoose:', !!global.mongoose);
     // If we have a real database connection, use Mongoose
     if (global.mongoose) {
+      console.log('Using Mongoose for User.findOne');
       const mongoose = require('mongoose');
       const User = mongoose.model('User');
       return User.findOne(query);
     } else {
+      console.log('Using mock database for User.findOne');
       // Use mock database
       const db = global.db;
       return db.findUser(query);
@@ -106,12 +113,16 @@ class User {
   }
   
   static async findById(id) {
+    console.log('User.findById called with id:', id);
+    console.log('Using Mongoose:', !!global.mongoose);
     // If we have a real database connection, use Mongoose
     if (global.mongoose) {
+      console.log('Using Mongoose for User.findById');
       const mongoose = require('mongoose');
       const User = mongoose.model('User');
       return User.findById(id);
     } else {
+      console.log('Using mock database for User.findById');
       // Use mock database
       const db = global.db;
       return db.findUserById(id);
@@ -119,12 +130,16 @@ class User {
   }
   
   static async findByIdAndUpdate(id, updateData, options = {}) {
+    console.log('User.findByIdAndUpdate called with id:', id);
+    console.log('Using Mongoose:', !!global.mongoose);
     // If we have a real database connection, use Mongoose
     if (global.mongoose) {
+      console.log('Using Mongoose for User.findByIdAndUpdate');
       const mongoose = require('mongoose');
       const User = mongoose.model('User');
       return User.findByIdAndUpdate(id, updateData, options);
     } else {
+      console.log('Using mock database for User.findByIdAndUpdate');
       // Use mock database
       const db = global.db;
       return db.updateUser(id, updateData);
