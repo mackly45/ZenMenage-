@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { HeroCarousel } from './components/landing/HeroCarousel';
 import { Stats } from './components/landing/Stats';
 import { Features } from './components/landing/Features';
@@ -16,17 +17,17 @@ import { FamilyPage } from './components/family/FamilyPage';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { MobileNav } from './components/mobile/MobileNav';
 import { AddTaskModal } from './components/dashboard/AddTaskModal';
+import { AppLayout } from './components/layout/AppLayout';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { LandingPage } from './pages/LandingPage';
 import api from './services/api';
 
-type AppState = 'landing' | 'auth' | 'app';
-type Page = 'dashboard' | 'family' | 'settings';
-
-export default function App() {
-  const [appState, setAppState] = useState('landing');
-  const [currentPage, setCurrentPage] = useState('dashboard');
+const AppContent = () => {
   const [showAddTask, setShowAddTask] = useState(false);
   const [userName, setUserName] = useState('Sophie');
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     checkAuthStatus();
@@ -36,30 +37,21 @@ export default function App() {
     try {
       const response = await api.getCurrentUser();
       if (response.success) {
-        setAppState('app');
+        setIsAuthenticated(true);
         setUserName(response.data.user.name);
       }
     } catch (error) {
-      // Not authenticated, stay on landing page
+      setIsAuthenticated(false);
       console.log('Not authenticated');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGetStarted = () => {
-    setAppState('auth');
-  };
-
-  const handleLogin = () => {
-    setAppState('app');
-    setCurrentPage('dashboard');
-  };
-
   const handleLogout = async () => {
     await api.logout();
-    setAppState('landing');
-    setCurrentPage('dashboard');
+    setIsAuthenticated(false);
+    navigate('/');
   };
 
   if (loading) {
@@ -70,45 +62,51 @@ export default function App() {
     );
   }
 
-  if (appState === 'landing') {
-    return (
-      <div className="min-h-screen bg-white">
-        <HeroCarousel onGetStarted={handleGetStarted} />
-        <Stats />
-        <Features />
-        <HowItWorks />
-        <Testimonials />
-        <Pricing onGetStarted={handleGetStarted} />
-        <FAQ />
-        <Blog />
-        <CTA onGetStarted={handleGetStarted} />
-        <Footer />
-      </div>
-    );
-  }
-
-  if (appState === 'auth') {
-    return <AuthPage onLogin={handleLogin} />;
-  }
-
   return (
-    <div className="flex min-h-screen bg-[#F5F6F8]">
-      <Sidebar
-        currentPage={currentPage}
-        onPageChange={setCurrentPage}
-        onLogout={handleLogout}
-      />
-      <div className="flex-1 pb-20 md:pb-0">
-        {currentPage === 'dashboard' && <Dashboard userName={userName} />}
-        {currentPage === 'family' && <FamilyPage />}
-        {currentPage === 'settings' && <SettingsPage />}
-      </div>
-      <MobileNav
-        currentPage={currentPage}
-        onPageChange={setCurrentPage}
-        onAddTask={() => setShowAddTask(true)}
-      />
+    <>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<LandingPage onGetStarted={() => navigate('/auth')} />} />
+        <Route path="/auth" element={<AuthPage onLogin={() => {
+          setIsAuthenticated(true);
+          navigate('/app/dashboard');
+        }} />} />
+
+        {/* Protected App Routes */}
+        <Route
+          path="/app/*"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated} isLoading={loading}>
+              <AppLayout
+                onLogout={handleLogout}
+                onAddTask={() => setShowAddTask(true)}
+              >
+                <Routes>
+                  <Route path="dashboard" element={<Dashboard userName={userName} />} />
+                  <Route path="family" element={<FamilyPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="*" element={<Navigate to="dashboard" replace />} />
+                </Routes>
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Root Redirect */}
+        <Route
+          path="*"
+          element={<Navigate to={isAuthenticated ? "/app/dashboard" : "/"} replace />}
+        />
+      </Routes>
       {showAddTask && <AddTaskModal onClose={() => setShowAddTask(false)} />}
-    </div>
+    </>
+  );
+};
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
