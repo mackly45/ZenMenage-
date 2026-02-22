@@ -1,95 +1,89 @@
-// Family model for both MongoDB and mock database
+let MongooseFamily = null;
+
+function getMongooseFamily() {
+  const mongoose = require('mongoose');
+  if (MongooseFamily) return MongooseFamily;
+
+  try {
+    MongooseFamily = mongoose.model('Family');
+    return MongooseFamily;
+  } catch (error) {
+    const familySchema = new mongoose.Schema({
+      name: {
+        type: String,
+        required: [true, 'Family name is required'],
+        trim: true,
+        maxlength: [100, 'Family name cannot be more than 100 characters']
+      },
+      members: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }],
+      createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+      },
+      inviteCode: {
+        type: String,
+        unique: true
+      }
+    }, {
+      timestamps: true
+    });
+
+    // Generate invite code before saving
+    familySchema.pre('save', function (next) {
+      if (!this.inviteCode) {
+        this.inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      }
+      next();
+    });
+
+    MongooseFamily = mongoose.model('Family', familySchema);
+    return MongooseFamily;
+  }
+}
 
 class Family {
   static async create(familyData) {
-    // If we have a real database connection, use Mongoose
     if (global.mongoose) {
-      const mongoose = require('mongoose');
-      const familySchema = new mongoose.Schema({
-        name: {
-          type: String,
-          required: [true, 'Family name is required'],
-          trim: true,
-          maxlength: [100, 'Family name cannot be more than 100 characters']
-        },
-        members: [{
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'User'
-        }],
-        createdBy: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'User',
-          required: true
-        },
-        inviteCode: {
-          type: String,
-          unique: true
-        }
-      }, {
-        timestamps: true
-      });
-      
-      // Generate invite code before saving
-      familySchema.pre('save', function(next) {
-        if (!this.inviteCode) {
-          this.inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        }
-        next();
-      });
-      
-      return mongoose.model('Family', familySchema).create(familyData);
+      return getMongooseFamily().create(familyData);
     } else {
-      // Use mock database
       const db = global.db;
-      
-      // Generate invite code
       const familyWithInvite = {
         ...familyData,
         inviteCode: Math.random().toString(36).substring(2, 8).toUpperCase()
       };
-      
       return db.createFamily(familyWithInvite);
     }
   }
-  
+
   static async findOne(query) {
-    // If we have a real database connection, use Mongoose
     if (global.mongoose) {
-      const mongoose = require('mongoose');
-      const Family = mongoose.model('Family');
-      return Family.findOne(query);
+      return getMongooseFamily().findOne(query);
     } else {
-      // Use mock database
-      const db = global.db;
-      return db.findFamily(query);
+      return global.db.findFamily(query);
     }
   }
-  
+
   static async findById(id) {
-    // If we have a real database connection, use Mongoose
     if (global.mongoose) {
-      const mongoose = require('mongoose');
-      const Family = mongoose.model('Family');
-      return Family.findById(id);
+      return getMongooseFamily().findById(id);
     } else {
-      // Use mock database
-      const db = global.db;
-      return db.findFamilyById(id);
+      return global.db.findFamilyById(id);
     }
   }
-  
+
   static async findByIdAndUpdate(id, updateData, options = {}) {
-    // If we have a real database connection, use Mongoose
     if (global.mongoose) {
-      const mongoose = require('mongoose');
-      const Family = mongoose.model('Family');
-      return Family.findByIdAndUpdate(id, updateData, options);
+      return getMongooseFamily().findByIdAndUpdate(id, updateData, options);
     } else {
-      // Use mock database
-      const db = global.db;
-      return db.updateFamily(id, updateData);
+      return global.db.updateFamily(id, updateData);
     }
   }
 }
+
+module.exports = Family;
 
 module.exports = Family;

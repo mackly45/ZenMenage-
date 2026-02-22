@@ -8,11 +8,35 @@ import api from '../../services/api';
 
 export function Dashboard({ userName }: { userName: string }) {
   const [showAddTask, setShowAddTask] = useState(false);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const quickStats = [
-    { label: 'Aujourd\'hui', value: '3/8', icon: Target, color: '#4A90E2' },
-    { label: 'Cette semaine', value: '24/32', icon: TrendingUp, color: '#357ABD' },
-    { label: 'Tendance', value: '+12%', icon: Sparkles, color: '#2A6599' },
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const response = await api.getDashboardStats();
+      if (response.success) {
+        setStats(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const quickStats = stats ? [
+    { label: 'Aujourd\'hui', value: `${stats.today.completed}/${stats.today.total}`, icon: Target, color: '#4A90E2' },
+    { label: 'Cette semaine', value: `${stats.week.completed}/${stats.week.total}`, icon: TrendingUp, color: '#357ABD' },
+    { label: 'Tendance', value: `${stats.overall.percentage}%`, icon: Sparkles, color: '#2A6599' },
+  ] : [
+    { label: 'Aujourd\'hui', value: '0/0', icon: Target, color: '#4A90E2' },
+    { label: 'Cette semaine', value: '0/0', icon: TrendingUp, color: '#357ABD' },
+    { label: 'Tendance', value: '0%', icon: Sparkles, color: '#2A6599' },
   ];
 
   return (
@@ -25,7 +49,9 @@ export function Dashboard({ userName }: { userName: string }) {
             transition={{ duration: 0.5 }}
           >
             <h1 className="text-2xl text-[#3A3A3A]">Bonjour, {userName} 👋</h1>
-            <p className="text-sm text-[#3A3A3A]/60">Dimanche 9 novembre 2025</p>
+            <p className="text-sm text-[#3A3A3A]/60">
+              {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
           </motion.div>
           <motion.button
             initial={{ opacity: 0, scale: 0.8 }}
@@ -82,15 +108,15 @@ export function Dashboard({ userName }: { userName: string }) {
           >
             <TaskList onAddTask={() => setShowAddTask(true)} />
           </motion.div>
-          
+
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
             className="space-y-6"
           >
-            <WeeklyStats />
-            
+            <WeeklyStats stats={stats?.week} />
+
             <motion.div
               whileHover={{ scale: 1.02 }}
               className="bg-gradient-to-br from-[#4A90E2] to-[#357ABD] text-white rounded-xl p-6 relative overflow-hidden group cursor-pointer"
@@ -116,27 +142,27 @@ export function Dashboard({ userName }: { userName: string }) {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-[#3A3A3A]/70">Tâches complétées</span>
-                    <span className="text-sm text-[#4A90E2]">75%</span>
+                    <span className="text-sm text-[#4A90E2]">{stats?.overall.percentage || 0}%</span>
                   </div>
                   <div className="w-full bg-[#F5F6F8] rounded-full h-2 overflow-hidden">
                     <motion.div
                       className="bg-gradient-to-r from-[#4A90E2] to-[#357ABD] h-full rounded-full"
                       initial={{ width: 0 }}
-                      animate={{ width: '75%' }}
+                      animate={{ width: `${stats?.overall.percentage || 0}%` }}
                       transition={{ duration: 1, delay: 0.6 }}
                     />
                   </div>
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-[#3A3A3A]/70">Participation famille</span>
-                    <span className="text-sm text-[#4A90E2]">92%</span>
+                    <span className="text-sm text-[#3A3A3A]/70">Participation aujourd'hui</span>
+                    <span className="text-sm text-[#4A90E2]">{stats?.today.percentage || 0}%</span>
                   </div>
                   <div className="w-full bg-[#F5F6F8] rounded-full h-2 overflow-hidden">
                     <motion.div
                       className="bg-gradient-to-r from-[#4A90E2] to-[#357ABD] h-full rounded-full"
                       initial={{ width: 0 }}
-                      animate={{ width: '92%' }}
+                      animate={{ width: `${stats?.today.percentage || 0}%` }}
                       transition={{ duration: 1, delay: 0.8 }}
                     />
                   </div>

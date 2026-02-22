@@ -1,14 +1,14 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 
-export function WeeklyStats() {
+export function WeeklyStats({ stats }: { stats?: any }) {
   const data = [
-    { name: 'Terminées', value: 24, color: '#4A90E2' },
-    { name: 'En cours', value: 8, color: '#F5F6F8' },
+    { name: 'Terminées', value: stats?.completed || 0, color: '#4A90E2' },
+    { name: 'En cours', value: (stats?.total - stats?.completed) || 0, color: '#F5F6F8' },
   ];
 
-  const totalTasks = data.reduce((sum, item) => sum + item.value, 0);
-  const completedPercentage = Math.round((data[0].value / totalTasks) * 100);
+  const totalTasks = stats?.total || 0;
+  const completedPercentage = stats?.percentage || 0;
 
   return (
     <div className="bg-white border-2 border-[#F5F6F8] rounded-xl p-6">

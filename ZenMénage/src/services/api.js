@@ -1,5 +1,5 @@
 // API service for connecting to the backend
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = '/api';
 
 class APIService {
   constructor() {
@@ -21,7 +21,7 @@ class APIService {
   // Make API request
   async request(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
-    
+
     const config = {
       headers: {
         'Content-Type': 'application/json',
@@ -56,11 +56,11 @@ class APIService {
       method: 'POST',
       body: JSON.stringify(userData)
     });
-    
+
     if (response.success && response.token) {
       this.setToken(response.token);
     }
-    
+
     return response;
   }
 
@@ -69,11 +69,11 @@ class APIService {
       method: 'POST',
       body: JSON.stringify(credentials)
     });
-    
+
     if (response.success && response.token) {
       this.setToken(response.token);
     }
-    
+
     return response;
   }
 

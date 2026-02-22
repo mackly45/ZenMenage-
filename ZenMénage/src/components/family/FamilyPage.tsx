@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { UserPlus, Crown, Star } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { UserPlus, Crown, Star, Copy, Check } from 'lucide-react';
+import api from '../../services/api';
 
 type Member = {
   id: string;
@@ -12,53 +13,55 @@ type Member = {
 };
 
 export function FamilyPage() {
-  const [members] = useState<Member[]>([
-    {
-      id: '1',
-      name: 'Sophie Martin',
-      role: 'Maman',
-      tasksCompleted: 28,
-      totalTasks: 32,
-      avatar: 'SM',
-      isAdmin: true,
-    },
-    {
-      id: '2',
-      name: 'Thomas Martin',
-      role: 'Papa',
-      tasksCompleted: 24,
-      totalTasks: 30,
-      avatar: 'TM',
-      isAdmin: true,
-    },
-    {
-      id: '3',
-      name: 'Emma Martin',
-      role: 'Fille (12 ans)',
-      tasksCompleted: 18,
-      totalTasks: 20,
-      avatar: 'EM',
-      isAdmin: false,
-    },
-    {
-      id: '4',
-      name: 'Lucas Martin',
-      role: 'Fils (9 ans)',
-      tasksCompleted: 12,
-      totalTasks: 15,
-      avatar: 'LM',
-      isAdmin: false,
-    },
-  ]);
-
+  const [members, setMembers] = useState<Member[]>([]);
+  const [family, setFamily] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [showAddMember, setShowAddMember] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    fetchFamily();
+  }, []);
+
+  const fetchFamily = async () => {
+    try {
+      setLoading(true);
+      const response = await api.getFamily();
+      if (response.success) {
+        setFamily(response.data.family);
+        // Map backend members to frontend Member type
+        const mappedMembers = response.data.family.members.map((m: any) => ({
+          id: m._id,
+          name: m.name,
+          role: m.role || (m._id === response.data.family.createdBy ? 'Admin' : 'Membre'),
+          tasksCompleted: m.tasksCompleted || 0,
+          totalTasks: m.totalTasks || 0,
+          avatar: m.name.split(' ').map((n: string) => n[0]).join('').toUpperCase(),
+          isAdmin: m._id === response.data.family.createdBy,
+        }));
+        setMembers(mappedMembers);
+      }
+    } catch (error) {
+      console.error('Error fetching family:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyInviteCode = () => {
+    if (family?.inviteCode) {
+      navigator.clipboard.writeText(family.inviteCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <div className="flex-1 bg-[#F5F6F8] min-h-screen">
       <header className="bg-white border-b border-[#F5F6F8] px-6 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl text-[#3A3A3A]">Ma Famille</h1>
+            <h1 className="text-2xl text-[#3A3A3A]">{family?.name || 'Ma Famille'}</h1>
             <p className="text-sm text-[#3A3A3A]/60">{members.length} membres actifs</p>
           </div>
           <button
@@ -166,54 +169,37 @@ export function FamilyPage() {
       {showAddMember && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h2 className="text-2xl text-[#3A3A3A] mb-6">Ajouter un membre</h2>
-            <form className="space-y-4">
-              <div>
-                <label className="block mb-2 text-sm text-[#3A3A3A]">Nom complet</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 rounded-lg bg-[#F5F6F8] border border-transparent focus:border-[#4A90E2] focus:outline-none"
-                  placeholder="Ex: Marie Dupont"
-                />
+            <div className="space-y-6">
+              <p className="text-[#3A3A3A]/60">
+                Partagez ce code avec les membres de votre famille pour qu'ils puissent rejoindre votre espace ZenMénage.
+              </p>
+
+              <div className="bg-[#F5F6F8] p-6 rounded-xl border-2 border-dashed border-[#4A90E2]/30 text-center">
+                <span className="text-sm text-[#3A3A3A]/40 block mb-2 uppercase tracking-wider font-semibold">
+                  Code d'invitation
+                </span>
+                <div className="flex items-center justify-center gap-4">
+                  <span className="text-4xl font-mono font-bold text-[#4A90E2]">
+                    {family?.inviteCode}
+                  </span>
+                  <button
+                    onClick={copyInviteCode}
+                    className="p-2 hover:bg-white rounded-lg transition-all text-[#4A90E2]"
+                  >
+                    {copied ? <Check className="w-6 h-6" /> : <Copy className="w-6 h-6" />}
+                  </button>
+                </div>
               </div>
-              <div>
-                <label className="block mb-2 text-sm text-[#3A3A3A]">Rôle</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 rounded-lg bg-[#F5F6F8] border border-transparent focus:border-[#4A90E2] focus:outline-none"
-                  placeholder="Ex: Fille, Fils, Parent..."
-                />
-              </div>
-              <div>
-                <label className="block mb-2 text-sm text-[#3A3A3A]">Email (optionnel)</label>
-                <input
-                  type="email"
-                  className="w-full px-4 py-3 rounded-lg bg-[#F5F6F8] border border-transparent focus:border-[#4A90E2] focus:outline-none"
-                  placeholder="email@exemple.com"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="admin" className="w-4 h-4 text-[#4A90E2]" />
-                <label htmlFor="admin" className="text-sm text-[#3A3A3A]">
-                  Administrateur (peut gérer la famille)
-                </label>
-              </div>
-              <div className="flex gap-3 pt-4">
+
+              <div className="pt-4">
                 <button
-                  type="button"
                   onClick={() => setShowAddMember(false)}
-                  className="flex-1 py-3 rounded-lg bg-[#F5F6F8] text-[#3A3A3A] hover:bg-[#F5F6F8]/70 transition-all"
+                  className="w-full py-3 rounded-lg bg-[#4A90E2] text-white hover:bg-[#4A90E2]/90 transition-all font-semibold"
                 >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-3 rounded-lg bg-[#4A90E2] text-white hover:bg-[#4A90E2]/90 transition-all"
-                >
-                  Ajouter
+                  Fermer
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
